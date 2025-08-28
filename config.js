@@ -59,15 +59,62 @@ function saveConfig(config) {
   }
 }
 
+// Check if ccusage is installed
+async function checkCCUsage() {
+  try {
+    const { stdout } = await execAsync('which ccusage');
+    return stdout.trim().length > 0;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Install ccusage if not present
+async function installCCUsage() {
+  console.error('📦 ccusage CLI is required but not found.');
+  console.error('Would you like to install it now? (y/n)');
+  const install = await question('Install ccusage? ');
+  
+  if (install.toLowerCase() === 'y' || install.toLowerCase() === 'yes') {
+    console.error('Installing ccusage globally...');
+    try {
+      await execAsync('npm install -g ccusage');
+      console.error('✅ ccusage installed successfully!');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to install ccusage:', error.message);
+      console.error('Please install manually: npm install -g ccusage');
+      return false;
+    }
+  } else {
+    console.error('⚠️  ccusage is required. Please install it manually: npm install -g ccusage');
+    return false;
+  }
+}
+
 // Interactive setup
 async function interactiveSetup() {
   console.error('\n🚀 CCUsage MCP Server Setup\n');
   console.error('This setup will help you configure the MCP server.\n');
 
+  // Check dependencies first
+  console.error('Step 0: Checking dependencies...');
+  const hasCCUsage = await checkCCUsage();
+  if (!hasCCUsage) {
+    const installed = await installCCUsage();
+    if (!installed) {
+      console.error('\n❌ Setup cannot continue without ccusage.');
+      rl.close();
+      process.exit(1);
+    }
+  } else {
+    console.error('✅ ccusage is installed');
+  }
+
   const config = {};
 
   // Ask for webhook URL
-  console.error('Step 1: n8n Webhook Configuration');
+  console.error('\nStep 1: n8n Webhook Configuration');
   console.error('Enter your n8n webhook URL (from your n8n workflow):');
   config.N8N_WEBHOOK_URL = await question('Webhook URL: ');
 
