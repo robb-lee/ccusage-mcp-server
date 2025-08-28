@@ -143,6 +143,7 @@ function parseCCUsageOutput(output) {
         
         // Debug: Parsed data
         break; // Found today's data, stop looking
+        }
       }
       
       // Also check if the whole date is in one line (wide terminal mode)
