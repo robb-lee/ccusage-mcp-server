@@ -1,5 +1,5 @@
 {
-  "name": "@robb/ccusage-mcp-server",
+  "name": "@robb-lee/ccusage-mcp-server",
   "version": "1.0.0",
   "description": "MCP server for tracking Claude token usage and sending to n8n webhook",
   "main": "index.js",
@@ -25,7 +25,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/robb-lee/ccusage-mcp-server.git"
+    "url": "git+https://github.com/robb-lee/ccusage-mcp-server.git"
   },
   "homepage": "https://github.com/robb-lee/ccusage-mcp-server#readme",
   "bugs": {
