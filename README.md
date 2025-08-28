@@ -19,14 +19,14 @@ claude mcp add ccusage-tracker -- npx -y @robb-lee/ccusage-mcp-server@latest
 ```
 
 ### 3. Usage
-In Claude Code, use the tool:
+In Claude Code, use the command:
 ```
-Send my token usage to the spreadsheet
+/robb:send-usage
 ```
 
 Or with a note:
 ```
-Send my token usage with note "Working on project X"
+/robb:send-usage "Working on project X"
 ```
 
 Done! Your usage data will be sent to the team spreadsheet automatically.
