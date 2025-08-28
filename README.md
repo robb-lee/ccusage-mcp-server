@@ -6,10 +6,10 @@ Track and share Claude token usage automatically via n8n and Google Sheets.
 
 ```bash
 # Run setup (automatically starts if no config exists)
-npx @robb-lee/ccusage-mcp-server
+npx --yes @robb-lee/ccusage-mcp-server@latest node index.js
 
 # Add to Claude Code
-claude mcp add ccusage-tracker npx @robb-lee/ccusage-mcp-server
+claude mcp add ccusage-tracker npx --yes @robb-lee/ccusage-mcp-server@latest node index.js
 
 # Verify installation
 claude mcp list
