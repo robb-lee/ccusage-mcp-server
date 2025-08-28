@@ -11,7 +11,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fetch from 'node-fetch';
 import os from 'os';
-import { getConfig, hasConfig } from './config.js';
+import { getConfig, hasConfig, installClaudeCommand } from './config.js';
 
 const execAsync = promisify(exec);
 
@@ -228,7 +228,9 @@ async function main() {
   // If setup mode, exit after configuration
   const args = process.argv.slice(2);
   if (args.includes('--setup') || args.includes('setup')) {
+    // Command installation happens in config.js during setup
     console.error('\n✅ Setup complete! You can now use the MCP server.');
+    console.error('📝 Use /robb:send-usage in Claude to send your token usage to the spreadsheet!');
     process.exit(0);
   }
   

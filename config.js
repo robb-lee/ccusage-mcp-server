@@ -3,6 +3,10 @@ import path from 'path';
 import os from 'os';
 import readline from 'readline';
 import { fileURLToPath } from 'url';
+import { promisify } from 'util';
+import { exec } from 'child_process';
+
+const execAsync = promisify(exec);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +14,8 @@ const __dirname = path.dirname(__filename);
 // Configuration file path
 const CONFIG_DIR = path.join(os.homedir(), '.ccusage-mcp');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const CLAUDE_COMMANDS_DIR = path.join(os.homedir(), '.claude', 'commands', 'robb');
+const COMMAND_SOURCE_FILE = path.join(__dirname, 'commands', 'robb', 'send-usage.md');
 
 // Create readline interface for interactive input
 const rl = readline.createInterface({
@@ -78,6 +84,10 @@ async function interactiveSetup() {
     saveConfig(config);
   }
 
+  // Install Claude command
+  console.error('\nStep 3: Installing Claude Command');
+  await installClaudeCommand();
+
   rl.close();
   return config;
 }
@@ -130,4 +140,30 @@ export async function getConfig() {
 // Check if configuration exists
 export function hasConfig() {
   return !!(process.env.N8N_WEBHOOK_URL || (fs.existsSync(CONFIG_FILE) && loadConfig().N8N_WEBHOOK_URL));
+}
+
+// Install Claude command file
+export async function installClaudeCommand() {
+  try {
+    // Check if source file exists
+    if (!fs.existsSync(COMMAND_SOURCE_FILE)) {
+      console.error('⚠️  Command file not found, skipping command installation');
+      return;
+    }
+
+    // Create commands directory if it doesn't exist
+    if (!fs.existsSync(CLAUDE_COMMANDS_DIR)) {
+      fs.mkdirSync(CLAUDE_COMMANDS_DIR, { recursive: true });
+      console.error('📁 Created Claude commands directory: ~/.claude/commands/robb');
+    }
+
+    // Copy the command file
+    const targetFile = path.join(CLAUDE_COMMANDS_DIR, 'send-usage.md');
+    fs.copyFileSync(COMMAND_SOURCE_FILE, targetFile);
+    console.error('✅ Installed /robb:send-usage command to Claude');
+    console.error('\n📝 You can now use /robb:send-usage in Claude to send your token usage!');
+  } catch (error) {
+    console.error('⚠️  Could not install Claude command:', error.message);
+    console.error('   You can manually copy commands/robb/send-usage.md to ~/.claude/commands/robb/');
+  }
 }
