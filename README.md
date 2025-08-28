@@ -37,10 +37,9 @@ ccusage CLI                       Google Sheets
 
 ### Prerequisites
 
-1. **ccusage** CLI tool installed and configured
+1. **ccusage** CLI tool installed
    ```bash
    npm install -g ccusage
-   ccusage --setup  # Configure with your API key
    ```
 
 2. **Node.js** 18.0.0 or higher
@@ -247,10 +246,9 @@ echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | node index.js
 
 ### For Team Members:
 
-1. **Install ccusage and configure with your API key**
+1. **Install ccusage CLI**
    ```bash
    npm install -g ccusage
-   ccusage --setup
    ```
 
 2. **Setup MCP server**
