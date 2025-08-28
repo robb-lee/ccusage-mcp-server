@@ -6,10 +6,10 @@ Track and share Claude token usage automatically via n8n and Google Sheets.
 
 ```bash
 # Run setup (automatically starts if no config exists)
-npx --yes @robb-lee/ccusage-mcp-server@latest node index.js
+npx @robb-lee/ccusage-mcp-server@latest
 
-# Add to Claude Code
-claude mcp add ccusage-tracker npx --yes @robb-lee/ccusage-mcp-server@latest node index.js
+# Add to Claude Code (with MCP_MODE to prevent menu in server mode)
+claude mcp add ccusage-tracker npx @robb-lee/ccusage-mcp-server -e MCP_MODE=true
 
 # Verify installation
 claude mcp list
@@ -62,7 +62,7 @@ ccusage-mcp-server --setup
 #### Option B: Use with npx (No installation)
 ```bash
 # Run directly with npx (automatically starts setup if no config exists)
-npx @robb-lee/ccusage-mcp-server
+npx @robb-lee/ccusage-mcp-server@latest
 ```
 
 #### Option C: Install from source
@@ -107,7 +107,7 @@ claude mcp add ccusage-tracker ccusage-mcp-server \
 #### Option B: If using npx
 ```bash
 # Add using npx
-claude mcp add ccusage-tracker npx @robb-lee/ccusage-mcp-server
+claude mcp add ccusage-tracker npx @robb-lee/ccusage-mcp-server@latest
 ```
 
 #### Option C: Add for entire project (team sharing)
@@ -303,7 +303,7 @@ echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | node index.js
 
 3. **Add to Claude Code**
    ```bash
-   claude mcp add ccusage-tracker npx @robb-lee/ccusage-mcp-server
+   claude mcp add ccusage-tracker npx @robb-lee/ccusage-mcp-server@latest
    ```
 
 4. **Start tracking!**

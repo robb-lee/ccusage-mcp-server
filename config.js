@@ -186,8 +186,8 @@ async function runFreshSetup() {
 
 // Interactive setup (now calls showUpdateMenu if config exists)
 async function interactiveSetup() {
-  // Check if config already exists and we're in TTY mode
-  if (hasConfig() && process.stdin.isTTY) {
+  // Check if config already exists - show menu regardless of TTY
+  if (hasConfig()) {
     return await showUpdateMenu();
   }
   
@@ -200,9 +200,13 @@ async function interactiveSetup() {
 // 2. Config file
 // 3. Interactive prompt
 export async function getConfig() {
-  // Check if running in setup mode
+  // Check if running in setup mode OR running via npx directly
   const args = process.argv.slice(2);
-  if (args.includes('--setup') || args.includes('setup')) {
+  const isSetupMode = args.includes('--setup') || args.includes('setup');
+  const isNpxExecution = process.argv[1] && process.argv[1].includes('/_npx/');
+  const isDirectExecution = process.stdin.isTTY || isNpxExecution;
+  
+  if (isSetupMode || (isDirectExecution && !process.env.MCP_MODE)) {
     const config = await interactiveSetup();
     return config;
   }
@@ -227,7 +231,7 @@ export async function getConfig() {
   }
 
   // Priority 3: Interactive setup (only if running directly, not through MCP)
-  if (process.stdin.isTTY) {
+  if (isDirectExecution) {
     console.error('No configuration found. Starting interactive setup...');
     return await interactiveSetup();
   }
