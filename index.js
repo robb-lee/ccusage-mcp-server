@@ -52,10 +52,13 @@ function parseCCUsageOutput(output) {
     models: {}
   };
 
-  // Get today's date in the format used by ccusage (YYYY-MM-DD)
-  const today = new Date().toISOString().split('T')[0];
-  const year = today.split('-')[0];  // e.g., "2025"
-  const monthDay = today.substring(5); // e.g., "08-28"
+  // Get today's date in local timezone (not UTC) to match system time
+  const localDate = new Date();
+  const year = String(localDate.getFullYear());  // e.g., "2025"
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const day = String(localDate.getDate()).padStart(2, '0');
+  const today = `${year}-${month}-${day}`;  // e.g., "2025-08-29"
+  const monthDay = `${month}-${day}`;  // e.g., "08-29"
   
   console.error(`[DEBUG] Looking for date: ${today} (year: ${year}, month-day: ${monthDay})`);
 
@@ -149,14 +152,16 @@ function parseCCUsageOutput(output) {
                 if (nextCheckLine.includes('│')) {
                   const nextCols = nextCheckLine.split('│').map(col => col.trim()).filter(col => col);
                   
-                  // If first column (date) is empty and second column has model info
-                  if (nextCols.length >= 2 && !nextCols[0] && nextCols[1].includes('-')) {
-                    allModelLines.push(nextCols[1]);
-                  } else if (nextCols.length >= 1 && nextCols[0] && !nextCols[0].includes('20')) {
-                    // In compact mode, model might be in first column of continuation line
-                    if (nextCols[0].includes('-')) {
-                      allModelLines.push(nextCols[0]);
+                  // Check if this line has model info in second column
+                  if (nextCols.length >= 2 && nextCols[1] && nextCols[1].includes('-')) {
+                    // Check if it's the same date continuation (date part in first column)
+                    if (nextCols[0] === monthDay || nextCols[0].includes(monthDay) || !nextCols[0] || nextCols[0] === '') {
+                      allModelLines.push(nextCols[1]);
                     }
+                  } 
+                  // Check if model is in first column (for different table formats)
+                  else if (nextCols.length >= 1 && nextCols[0] && nextCols[0].includes('-')) {
+                    allModelLines.push(nextCols[0]);
                   } else {
                     // New date row or no model info, stop
                     break;
@@ -250,14 +255,16 @@ function parseCCUsageOutput(output) {
                   if (nextCheckLine.includes('│')) {
                     const nextCols = nextCheckLine.split('│').map(col => col.trim()).filter(col => col);
                     
-                    // If first column (date) is empty and second column has model info
-                    if (nextCols.length >= 2 && !nextCols[0] && nextCols[1].includes('-')) {
-                      allModelLines.push(nextCols[1]);
-                    } else if (nextCols.length >= 1 && nextCols[0] && !nextCols[0].includes('20')) {
-                      // In compact mode, model might be in first column of continuation line
-                      if (nextCols[0].includes('-')) {
-                        allModelLines.push(nextCols[0]);
+                    // Check if this line has model info in second column
+                    if (nextCols.length >= 2 && nextCols[1] && nextCols[1].includes('-')) {
+                      // Check if it's the same date continuation (date part in first column)
+                      if (nextCols[0] === monthDay || nextCols[0].includes(monthDay) || !nextCols[0] || nextCols[0] === '') {
+                        allModelLines.push(nextCols[1]);
                       }
+                    } 
+                    // Check if model is in first column (for different table formats)
+                    else if (nextCols.length >= 1 && nextCols[0] && nextCols[0].includes('-')) {
+                      allModelLines.push(nextCols[0]);
                     } else {
                       // New date row or no model info, stop
                       break;
