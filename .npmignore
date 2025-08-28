@@ -1,0 +1,44 @@
+# Development files
+*.log
+.DS_Store
+.env
+.env.*
+
+# Claude-specific files
+.claude/
+CLAUDE.md
+claudedocs/
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+test-*.js
+
+# Documentation and examples
+*.example.*
+SETUP.md
+docs/
+
+# n8n related files
+n8n-*.js
+n8n-*.json
+*.workflow.json
+
+# Editor and IDE
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# Git
+.git/
+.gitignore
+
+# Build and temp files
+tmp/
+temp/
+dist/
+build/
+*.tmp

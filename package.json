@@ -1,0 +1,51 @@
+{
+  "name": "ccusage-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for tracking Claude token usage and sending to n8n webhook",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "ccusage-mcp-server": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "setup": "node index.js --setup"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "ccusage",
+    "token-tracking",
+    "n8n",
+    "webhook",
+    "spreadsheet"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ccusage-mcp-server.git"
+  },
+  "homepage": "https://github.com/yourusername/ccusage-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/yourusername/ccusage-mcp-server/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "index.js",
+    "config.js",
+    "README.md",
+    "LICENSE"
+  ]
+}
