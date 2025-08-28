@@ -33,8 +33,7 @@ const server = new Server(
 
 // Helper function to parse ccusage output
 function parseCCUsageOutput(output) {
-  console.error('Raw ccusage output:');
-  console.error(output);
+  // Remove debug logs for cleaner MCP operation
   
   const lines = output.split('\n');
   const data = {
@@ -49,7 +48,6 @@ function parseCCUsageOutput(output) {
 
   // Get today's date in the format used by ccusage (YYYY-MM-DD)
   const today = new Date().toISOString().split('T')[0];
-  console.error('Looking for date:', today);
 
   // Look for table rows - find lines that contain today's date
   for (const line of lines) {
@@ -198,7 +196,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Parse the output
-      console.error('Parsing ccusage output...');
       const usageData = parseCCUsageOutput(ccusageOutput);
 
       // Prepare payload
@@ -211,9 +208,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         ...usageData,
         rawOutput: ccusageOutput // Include raw output for debugging
       };
-
-      console.error('Sending data to n8n webhook...');
-      console.error('Payload:', JSON.stringify(payload, null, 2));
 
       // Send to n8n webhook
       const response = await fetch(webhookUrl, {
@@ -268,10 +262,7 @@ Response from n8n: ${responseData || 'Success'}`,
 
 // Start the server
 async function main() {
-  // Check if running as MCP server (no TTY on stdin/stdout)
-  const isMCPMode = !process.stdin.isTTY && !process.stdout.isTTY;
-  
-  // Load configuration
+  // Load configuration (will only show interactive menu if --setup flag is present)
   globalConfig = await getConfig();
   
   // If setup mode, exit after configuration  
@@ -283,16 +274,11 @@ async function main() {
     process.exit(0);
   }
   
-  // If no config and running in TTY, getConfig() will trigger interactive setup/menu
-  // which may exit the process, so this code may not be reached
-  
+  // Always start MCP server (no TTY checks)
   const transport = new StdioServerTransport();
   await server.connect(transport);
   
-  // Only log if not in MCP mode to avoid cluttering Claude's output
-  if (!isMCPMode) {
-    console.error('ccusage MCP server running on stdio');
-  }
+  // Silent operation - no console logs in server mode
 }
 
 main().catch((error) => {
