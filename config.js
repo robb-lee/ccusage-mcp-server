@@ -37,7 +37,11 @@ function loadConfig() {
   try {
     if (fs.existsSync(CONFIG_FILE)) {
       const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-      console.error('Loaded configuration from:', CONFIG_FILE);
+      // Only log in interactive mode
+      const isMCPMode = !process.stdin.isTTY && !process.stdout.isTTY;
+      if (!isMCPMode) {
+        console.error('Loaded configuration from:', CONFIG_FILE);
+      }
       return config;
     }
   } catch (error) {
@@ -204,16 +208,20 @@ export async function getConfig() {
   const args = process.argv.slice(2);
   const isSetupMode = args.includes('--setup') || args.includes('setup');
   const isNpxExecution = process.argv[1] && process.argv[1].includes('/_npx/');
+  const isMCPMode = !process.stdin.isTTY && !process.stdout.isTTY; // Running as MCP server (stdio pipes)
   const isDirectExecution = process.stdin.isTTY;
   
-  if (isSetupMode || (isDirectExecution && !process.env.MCP_MODE)) {
+  // Only run interactive setup if explicitly in setup mode or running directly with TTY (not as MCP)
+  if (isSetupMode || (isDirectExecution && !isMCPMode)) {
     const config = await interactiveSetup();
     return config;
   }
 
   // Priority 1: Environment variables
   if (process.env.N8N_WEBHOOK_URL) {
-    console.error('Using configuration from environment variables');
+    if (!isMCPMode) {
+      console.error('Using configuration from environment variables');
+    }
     return {
       N8N_WEBHOOK_URL: process.env.N8N_WEBHOOK_URL,
       CCUSAGE_USER_ID: process.env.CCUSAGE_USER_ID || process.env.USER || os.hostname()
@@ -223,21 +231,25 @@ export async function getConfig() {
   // Priority 2: Config file
   const fileConfig = loadConfig();
   if (fileConfig.N8N_WEBHOOK_URL) {
-    console.error('Using configuration from config file');
+    if (!isMCPMode) {
+      console.error('Using configuration from config file');
+    }
     return {
       N8N_WEBHOOK_URL: fileConfig.N8N_WEBHOOK_URL,
       CCUSAGE_USER_ID: fileConfig.CCUSAGE_USER_ID || process.env.USER || os.hostname()
     };
   }
 
-  // Priority 3: Interactive setup (only if running directly, not through MCP)
-  if (isDirectExecution) {
+  // Priority 3: Interactive setup (only if running directly with TTY, not through MCP)
+  if (isDirectExecution && !isMCPMode) {
     console.error('No configuration found. Starting interactive setup...');
     return await interactiveSetup();
   }
 
   // If no config and not interactive, return error config
-  console.error('Warning: No configuration found. Please set N8N_WEBHOOK_URL');
+  if (!isMCPMode) {
+    console.error('Warning: No configuration found. Please set N8N_WEBHOOK_URL');
+  }
   return {
     N8N_WEBHOOK_URL: null,
     CCUSAGE_USER_ID: process.env.USER || os.hostname()

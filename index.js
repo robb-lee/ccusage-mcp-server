@@ -268,6 +268,9 @@ Response from n8n: ${responseData || 'Success'}`,
 
 // Start the server
 async function main() {
+  // Check if running as MCP server (no TTY on stdin/stdout)
+  const isMCPMode = !process.stdin.isTTY && !process.stdout.isTTY;
+  
   // Load configuration
   globalConfig = await getConfig();
   
@@ -285,7 +288,11 @@ async function main() {
   
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('ccusage MCP server running on stdio');
+  
+  // Only log if not in MCP mode to avoid cluttering Claude's output
+  if (!isMCPMode) {
+    console.error('ccusage MCP server running on stdio');
+  }
 }
 
 main().catch((error) => {
