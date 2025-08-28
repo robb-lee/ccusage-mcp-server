@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "bin": {
-    "ccusage-mcp-server": "./index.js"
+    "ccusage-mcp-server": "index.js"
   },
   "scripts": {
     "start": "node index.js",
