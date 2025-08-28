@@ -71,111 +71,125 @@ function parseCCUsageOutput(output) {
       continue;
     }
 
-    // Check if this line contains the year and the next line contains month-day
-    // (for compact mode where date is split across two lines)
-    if (trimmed.includes(year) && trimmed.includes('│')) {
-      // Check next line for month-day
-      const nextLine = lines[i + 1]?.trim() || '';
-      
-      if (nextLine.includes(monthDay)) {
-        // Found today's data in compact mode (split across two lines)
-        console.error(`[DEBUG] Found today's data in compact mode:`);
-        console.error(`[DEBUG]   Year line: ${trimmed.substring(0, 80)}...`);
-        console.error(`[DEBUG]   Month-day line: ${nextLine.substring(0, 80)}...`);
+    // Check if this line contains today's date
+    // Handle both compact mode (date split across lines) and wide mode (full date in one line)
+    if (trimmed.includes('│')) {
+      // Get the columns from this line
+      const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
+      if (columns.length > 0) {
+        const dateColumn = columns[0];
+        const nextLine = lines[i + 1]?.trim() || '';
         
-        // Parse data from the year line (which has the actual numbers)
-        const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
-        
-        // In compact mode, columns might be different - let's check the actual length
-        console.error(`[DEBUG] Columns found: ${columns.length}`);
-        console.error(`[DEBUG] Columns: ${JSON.stringify(columns.slice(0, 6))}`);
-        
-        if (columns.length >= 5) {  // Compact mode has fewer columns
-        // Parse numeric values, removing commas
-        const parseNumberValue = (str) => {
-          const cleaned = str.replace(/[,$]/g, '');
-          return parseInt(cleaned, 10) || 0;
-        };
-        
-        const parseFloatValue = (str) => {
-          const cleaned = str.replace(/[$,]/g, '');
-          return parseFloat(cleaned) || 0;
-        };
+        // Check for wide mode: full date in one column
+        if (dateColumn === today || dateColumn.includes(today)) {
+          // Found today's data in wide mode
+          console.error(`[DEBUG] Found today's data (wide mode): ${trimmed.substring(0, 80)}...`);
+          
+          // In wide/regular mode, check we have enough columns
+          if (columns.length >= 5) {
+            // Parse numeric values, removing commas
+            const parseNumberValue = (str) => {
+              const cleaned = str.replace(/[,$]/g, '');
+              return parseInt(cleaned, 10) || 0;
+            };
+            
+            const parseFloatValue = (str) => {
+              const cleaned = str.replace(/[$,]/g, '');
+              return parseFloat(cleaned) || 0;
+            };
 
-        // Extract values from table columns
-        // In compact mode: Date | Models | Input | Output | Cost
-        // Regular mode: Date | Models | Input | Output | Cache Create | Cache Read | Total | Cost
-        if (columns.length === 5) {
-          // Compact mode
-          data.inputTokens = parseNumberValue(columns[2]); // Input column
-          data.outputTokens = parseNumberValue(columns[3]); // Output column
-          data.totalCost = parseFloatValue(columns[4]); // Cost column
-          // Calculate total tokens (no cache info in compact mode)
-          data.totalTokens = data.inputTokens + data.outputTokens;
-        } else {
-          // Wide/regular mode with all columns
-          data.inputTokens = parseNumberValue(columns[2]); // Input column
-          data.outputTokens = parseNumberValue(columns[3]); // Output column
-          data.cacheCreationInputTokens = parseNumberValue(columns[4]); // Cache Create column
-          data.cacheReadInputTokens = parseNumberValue(columns[5]); // Cache Read column
-          data.totalTokens = parseNumberValue(columns[6]); // Total Tokens column
-          data.totalCost = parseFloatValue(columns[7]); // Cost column
-        }
-        
-        console.error(`[DEBUG] Parsed data from today's row:`);
-        console.error(`[DEBUG]   Input: ${data.inputTokens}, Output: ${data.outputTokens}`);
-        console.error(`[DEBUG]   Cache Create: ${data.cacheCreationInputTokens}, Cache Read: ${data.cacheReadInputTokens}`);
-        console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`);
-        
-        // Extract model info from second column if available
-        if (columns[1]) {
-          const modelText = columns[1];
-          if (modelText.includes('-')) {
-            const models = modelText.split('\n').filter(m => m.trim().startsWith('- '));
-            models.forEach(model => {
-              const cleanModel = model.replace('- ', '').trim();
-              if (cleanModel) {
-                data.models[cleanModel] = data.totalTokens; // Approximate, since we don't have per-model breakdown
+            // Extract values from table columns
+            // In compact mode: Date | Models | Input | Output | Cost
+            // Regular mode: Date | Models | Input | Output | Cache Create | Cache Read | Total | Cost
+            if (columns.length === 5) {
+              // Compact mode
+              data.inputTokens = parseNumberValue(columns[2]); // Input column
+              data.outputTokens = parseNumberValue(columns[3]); // Output column
+              data.totalCost = parseFloatValue(columns[4]); // Cost column
+              // Calculate total tokens (no cache info in compact mode)
+              data.totalTokens = data.inputTokens + data.outputTokens;
+            } else {
+              // Wide/regular mode with all columns
+              data.inputTokens = parseNumberValue(columns[2]); // Input column
+              data.outputTokens = parseNumberValue(columns[3]); // Output column
+              data.cacheCreationInputTokens = parseNumberValue(columns[4]); // Cache Create column
+              data.cacheReadInputTokens = parseNumberValue(columns[5]); // Cache Read column
+              data.totalTokens = parseNumberValue(columns[6]); // Total Tokens column
+              data.totalCost = parseFloatValue(columns[7]); // Cost column
+            }
+            
+            console.error(`[DEBUG] Parsed data from today's row:`);
+            console.error(`[DEBUG]   Input: ${data.inputTokens}, Output: ${data.outputTokens}`);
+            console.error(`[DEBUG]   Cache Create: ${data.cacheCreationInputTokens}, Cache Read: ${data.cacheReadInputTokens}`);
+            console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`);
+            
+            // Extract model info from second column if available
+            if (columns[1]) {
+              const modelText = columns[1];
+              if (modelText.includes('-')) {
+                const models = modelText.split('\n').filter(m => m.trim().startsWith('- '));
+                models.forEach(model => {
+                  const cleanModel = model.replace('- ', '').trim();
+                  if (cleanModel) {
+                    data.models[cleanModel] = data.totalTokens; // Approximate, since we don't have per-model breakdown
+                  }
+                });
               }
-            });
+            }
+            
+            break; // Found today's data, stop looking
           }
         }
-        
-        // Debug: Parsed data
-        break; // Found today's data, stop looking
-        }
-      }
-      
-      // Also check if the whole date is in one line (wide terminal mode)
-      if (trimmed.includes(today)) {
-        console.error(`[DEBUG] Found today's data in wide mode: ${trimmed.substring(0, 80)}...`);
-        
-        const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
-        
-        if (columns.length >= 8) {
-          // Parse in wide mode (same logic as before)
-          const parseNumberValue = (str) => {
-            const cleaned = str.replace(/[,$]/g, '');
-            return parseInt(cleaned, 10) || 0;
-          };
-          
-          const parseFloatValue = (str) => {
-            const cleaned = str.replace(/[$,]/g, '');
-            return parseFloat(cleaned) || 0;
-          };
+        // Check for compact mode: year in this line, month-day in next line  
+        else if (dateColumn.includes(year) && nextLine.includes(monthDay)) {
+          // Verify this is actually today's data by checking the month-day in next line
+          const nextColumns = nextLine.split('│').map(col => col.trim()).filter(col => col);
+          if (nextColumns.length > 0 && nextColumns[0].includes(monthDay)) {
+            console.error(`[DEBUG] Found today's data (compact mode):`);
+            console.error(`[DEBUG]   Year line: ${trimmed.substring(0, 80)}...`);
+            console.error(`[DEBUG]   Month-day line: ${nextLine.substring(0, 80)}...`);
+            
+            // Parse data from current line (which has the actual numbers)
+            if (columns.length >= 5) {
+              const parseNumberValue = (str) => {
+                const cleaned = str.replace(/[,$]/g, '');
+                return parseInt(cleaned, 10) || 0;
+              };
+              
+              const parseFloatValue = (str) => {
+                const cleaned = str.replace(/[$,]/g, '');
+                return parseFloat(cleaned) || 0;
+              };
 
-          data.inputTokens = parseNumberValue(columns[2]);
-          data.outputTokens = parseNumberValue(columns[3]);
-          data.cacheCreationInputTokens = parseNumberValue(columns[4]);
-          data.cacheReadInputTokens = parseNumberValue(columns[5]);
-          data.totalTokens = parseNumberValue(columns[6]);
-          data.totalCost = parseFloatValue(columns[7]);
-          
-          console.error(`[DEBUG] Parsed data from wide mode:`);
-          console.error(`[DEBUG]   Input: ${data.inputTokens}, Output: ${data.outputTokens}`);
-          console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`);
-          
-          break;
+              // In compact mode parsing
+              data.inputTokens = parseNumberValue(columns[2]);
+              data.outputTokens = parseNumberValue(columns[3]);
+              data.cacheCreationInputTokens = parseNumberValue(columns[4]);
+              data.cacheReadInputTokens = parseNumberValue(columns[5]);
+              data.totalTokens = parseNumberValue(columns[6]);
+              data.totalCost = parseFloatValue(columns[7]);
+              
+              console.error(`[DEBUG] Parsed data from compact mode:`);
+              console.error(`[DEBUG]   Input: ${data.inputTokens}, Output: ${data.outputTokens}`);
+              console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`);
+              
+              // Extract model info if available
+              if (columns[1]) {
+                const modelText = columns[1];
+                if (modelText.includes('-')) {
+                  const models = modelText.split('\n').filter(m => m.trim().startsWith('- '));
+                  models.forEach(model => {
+                    const cleanModel = model.replace('- ', '').trim();
+                    if (cleanModel) {
+                      data.models[cleanModel] = data.totalTokens;
+                    }
+                  });
+                }
+              }
+              
+              break; // Found today's data, stop looking
+            }
+          }
         }
       }
     }
