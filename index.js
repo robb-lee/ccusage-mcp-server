@@ -31,11 +31,17 @@ const server = new Server(
   }
 );
 
+// Helper function to strip ANSI color codes
+function stripAnsiCodes(str) {
+  return str.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 // Helper function to parse ccusage output
 function parseCCUsageOutput(output) {
-  // Remove debug logs for cleaner MCP operation
+  // Remove ANSI color codes for cleaner parsing
+  const cleanOutput = stripAnsiCodes(output);
   
-  const lines = output.split('\n');
+  const lines = cleanOutput.split('\n');
   const data = {
     totalTokens: 0,
     inputTokens: 0,
@@ -48,27 +54,43 @@ function parseCCUsageOutput(output) {
 
   // Get today's date in the format used by ccusage (YYYY-MM-DD)
   const today = new Date().toISOString().split('T')[0];
+  const year = today.split('-')[0];  // e.g., "2025"
+  const monthDay = today.substring(5); // e.g., "08-28"
+  
+  console.error(`[DEBUG] Looking for date: ${today} (year: ${year}, month-day: ${monthDay})`);
 
-  // Look for table rows - find lines that contain today's date
-  for (const line of lines) {
+  // Look for table rows - need to check consecutive lines for split dates
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
     
     // Skip table borders and headers
     if (!trimmed || trimmed.startsWith('┌') || trimmed.startsWith('├') || 
         trimmed.startsWith('└') || trimmed.startsWith('│ Date') ||
-        trimmed.includes('━')) {
+        trimmed.includes('━') || trimmed.includes('─')) {
       continue;
     }
 
-    // Look for today's data - check if line contains today's date
-    if (trimmed.includes(today)) {
-      // Debug: Found today row
-      console.error(`[DEBUG] Found today's row: ${trimmed.substring(0, 50)}...`);
+    // Check if this line contains the year and the next line contains month-day
+    // (for compact mode where date is split across two lines)
+    if (trimmed.includes(year) && trimmed.includes('│')) {
+      // Check next line for month-day
+      const nextLine = lines[i + 1]?.trim() || '';
       
-      // Split by │ and clean up the data
-      const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
-      
-      if (columns.length >= 8) {
+      if (nextLine.includes(monthDay)) {
+        // Found today's data in compact mode (split across two lines)
+        console.error(`[DEBUG] Found today's data in compact mode:`);
+        console.error(`[DEBUG]   Year line: ${trimmed.substring(0, 80)}...`);
+        console.error(`[DEBUG]   Month-day line: ${nextLine.substring(0, 80)}...`);
+        
+        // Parse data from the year line (which has the actual numbers)
+        const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
+        
+        // In compact mode, columns might be different - let's check the actual length
+        console.error(`[DEBUG] Columns found: ${columns.length}`);
+        console.error(`[DEBUG] Columns: ${JSON.stringify(columns.slice(0, 6))}`);
+        
+        if (columns.length >= 5) {  // Compact mode has fewer columns
         // Parse numeric values, removing commas
         const parseNumberValue = (str) => {
           const cleaned = str.replace(/[,$]/g, '');
@@ -81,17 +103,29 @@ function parseCCUsageOutput(output) {
         };
 
         // Extract values from table columns
-        data.inputTokens = parseNumberValue(columns[2]); // Input column
-        data.outputTokens = parseNumberValue(columns[3]); // Output column
-        data.cacheCreationInputTokens = parseNumberValue(columns[4]); // Cache Create column
-        data.cacheReadInputTokens = parseNumberValue(columns[5]); // Cache Read column
-        data.totalTokens = parseNumberValue(columns[6]); // Total Tokens column
-        data.totalCost = parseFloatValue(columns[7]); // Cost column
+        // In compact mode: Date | Models | Input | Output | Cost
+        // Regular mode: Date | Models | Input | Output | Cache Create | Cache Read | Total | Cost
+        if (columns.length === 5) {
+          // Compact mode
+          data.inputTokens = parseNumberValue(columns[2]); // Input column
+          data.outputTokens = parseNumberValue(columns[3]); // Output column
+          data.totalCost = parseFloatValue(columns[4]); // Cost column
+          // Calculate total tokens (no cache info in compact mode)
+          data.totalTokens = data.inputTokens + data.outputTokens;
+        } else {
+          // Wide/regular mode with all columns
+          data.inputTokens = parseNumberValue(columns[2]); // Input column
+          data.outputTokens = parseNumberValue(columns[3]); // Output column
+          data.cacheCreationInputTokens = parseNumberValue(columns[4]); // Cache Create column
+          data.cacheReadInputTokens = parseNumberValue(columns[5]); // Cache Read column
+          data.totalTokens = parseNumberValue(columns[6]); // Total Tokens column
+          data.totalCost = parseFloatValue(columns[7]); // Cost column
+        }
         
         console.error(`[DEBUG] Parsed data from today's row:`);
         console.error(`[DEBUG]   Input: ${data.inputTokens}, Output: ${data.outputTokens}`);
         console.error(`[DEBUG]   Cache Create: ${data.cacheCreationInputTokens}, Cache Read: ${data.cacheReadInputTokens}`);
-        console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`)
+        console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`);
         
         // Extract model info from second column if available
         if (columns[1]) {
@@ -109,6 +143,39 @@ function parseCCUsageOutput(output) {
         
         // Debug: Parsed data
         break; // Found today's data, stop looking
+      }
+      
+      // Also check if the whole date is in one line (wide terminal mode)
+      if (trimmed.includes(today)) {
+        console.error(`[DEBUG] Found today's data in wide mode: ${trimmed.substring(0, 80)}...`);
+        
+        const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
+        
+        if (columns.length >= 8) {
+          // Parse in wide mode (same logic as before)
+          const parseNumberValue = (str) => {
+            const cleaned = str.replace(/[,$]/g, '');
+            return parseInt(cleaned, 10) || 0;
+          };
+          
+          const parseFloatValue = (str) => {
+            const cleaned = str.replace(/[$,]/g, '');
+            return parseFloat(cleaned) || 0;
+          };
+
+          data.inputTokens = parseNumberValue(columns[2]);
+          data.outputTokens = parseNumberValue(columns[3]);
+          data.cacheCreationInputTokens = parseNumberValue(columns[4]);
+          data.cacheReadInputTokens = parseNumberValue(columns[5]);
+          data.totalTokens = parseNumberValue(columns[6]);
+          data.totalCost = parseFloatValue(columns[7]);
+          
+          console.error(`[DEBUG] Parsed data from wide mode:`);
+          console.error(`[DEBUG]   Input: ${data.inputTokens}, Output: ${data.outputTokens}`);
+          console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`);
+          
+          break;
+        }
       }
     }
   }
@@ -189,7 +256,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       let ccusageOutput;
       
       try {
-        const { stdout, stderr } = await execAsync('ccusage --today');
+        const { stdout, stderr } = await execAsync('ccusage --today --no-color');
         if (stderr) {
           console.error(`[DEBUG] ccusage stderr: ${stderr}`);
         }
