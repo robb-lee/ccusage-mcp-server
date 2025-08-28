@@ -61,8 +61,9 @@ function parseCCUsageOutput(output) {
     }
 
     // Look for today's data - check if line contains today's date
-    if (trimmed.includes(today) || trimmed.includes(today.replace(/-/g, '-').substring(5))) {
+    if (trimmed.includes(today)) {
       // Debug: Found today row
+      console.error(`[DEBUG] Found today's row: ${trimmed.substring(0, 50)}...`);
       
       // Split by │ and clean up the data
       const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
@@ -87,6 +88,11 @@ function parseCCUsageOutput(output) {
         data.totalTokens = parseNumberValue(columns[6]); // Total Tokens column
         data.totalCost = parseFloatValue(columns[7]); // Cost column
         
+        console.error(`[DEBUG] Parsed data from today's row:`);
+        console.error(`[DEBUG]   Input: ${data.inputTokens}, Output: ${data.outputTokens}`);
+        console.error(`[DEBUG]   Cache Create: ${data.cacheCreationInputTokens}, Cache Read: ${data.cacheReadInputTokens}`);
+        console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`)
+        
         // Extract model info from second column if available
         if (columns[1]) {
           const modelText = columns[1];
@@ -109,7 +115,7 @@ function parseCCUsageOutput(output) {
 
   // If no data found, try to find "Total" row as fallback
   if (data.totalTokens === 0) {
-    // No today data found, looking for Total row
+    console.error(`[DEBUG] No today data found, looking for Total row`);
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.includes('Total') && trimmed.includes('│')) {
@@ -179,15 +185,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Execute ccusage command
-      // Executing ccusage command...
+      console.error('[DEBUG] Executing ccusage --today command...');
       let ccusageOutput;
       
       try {
         const { stdout, stderr } = await execAsync('ccusage --today');
         if (stderr) {
-          // Debug: ccusage stderr available
+          console.error(`[DEBUG] ccusage stderr: ${stderr}`);
         }
         ccusageOutput = stdout;
+        console.error(`[DEBUG] ccusage output length: ${ccusageOutput.length} chars`);
       } catch (error) {
         throw new McpError(
           ErrorCode.InternalError,
@@ -197,6 +204,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // Parse the output
       const usageData = parseCCUsageOutput(ccusageOutput);
+      console.error(`[DEBUG] Final parsed data:`);
+      console.error(`[DEBUG]   Total tokens: ${usageData.totalTokens}`);
+      console.error(`[DEBUG]   Input/Output: ${usageData.inputTokens}/${usageData.outputTokens}`);
+      console.error(`[DEBUG]   Cost: $${usageData.totalCost}`);
 
       // Prepare payload
       const payload = {
