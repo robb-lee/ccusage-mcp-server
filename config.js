@@ -92,8 +92,53 @@ async function installCCUsage() {
   }
 }
 
-// Interactive setup
-async function interactiveSetup() {
+// Interactive menu for existing users
+async function showUpdateMenu() {
+  console.error('\n🚀 CCUsage MCP Server');
+  console.error('Configuration found. What would you like to do?\n');
+  
+  console.error('1) 🔄 Update command files to latest version');
+  console.error('2) ⚙️  Reconfigure settings (change webhook/username)');
+  console.error('3) 🗑️  Reset configuration and setup again\n');
+  
+  const choice = await question('Choose (1-3): ');
+  
+  switch (choice.trim()) {
+    case '1':
+      console.error('\n🔄 Updating command files...');
+      await installClaudeCommand();
+      console.error('\n✅ Command files updated! You can now use /robb:send-usage with the latest version.');
+      break;
+      
+    case '2':
+      console.error('\n⚙️  Starting reconfiguration...');
+      return await runFreshSetup(); // Will return new config
+      
+    case '3':
+      console.error('\n🗑️  Resetting configuration...');
+      // Delete config file
+      try {
+        if (fs.existsSync(CONFIG_FILE)) {
+          fs.unlinkSync(CONFIG_FILE);
+          console.error('✅ Configuration deleted.');
+        }
+      } catch (error) {
+        console.error('⚠️  Could not delete config file:', error.message);
+      }
+      return await runFreshSetup(); // Will return new config
+      
+    default:
+      console.error('❌ Invalid choice. Exiting...');
+      rl.close();
+      process.exit(0);
+  }
+  
+  rl.close();
+  process.exit(0); // Exit after menu operations
+}
+
+// Run fresh setup (extracted from interactiveSetup)
+async function runFreshSetup() {
   console.error('\n🚀 CCUsage MCP Server Setup\n');
   console.error('This setup will help you configure the MCP server.\n');
 
@@ -137,6 +182,17 @@ async function interactiveSetup() {
 
   rl.close();
   return config;
+}
+
+// Interactive setup (now calls showUpdateMenu if config exists)
+async function interactiveSetup() {
+  // Check if config already exists and we're in TTY mode
+  if (hasConfig() && process.stdin.isTTY) {
+    return await showUpdateMenu();
+  }
+  
+  // No config exists, run fresh setup
+  return await runFreshSetup();
 }
 
 // Get configuration with priority:

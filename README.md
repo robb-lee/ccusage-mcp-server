@@ -5,8 +5,8 @@ Track and share Claude token usage automatically via n8n and Google Sheets.
 ## 🚀 Quick Start
 
 ```bash
-# Install and setup
-npx @robb-lee/ccusage-mcp-server --setup
+# Run setup (automatically starts if no config exists)
+npx @robb-lee/ccusage-mcp-server
 
 # Add to Claude Code
 claude mcp add ccusage-tracker npx @robb-lee/ccusage-mcp-server
@@ -61,8 +61,8 @@ ccusage-mcp-server --setup
 
 #### Option B: Use with npx (No installation)
 ```bash
-# Run directly with npx
-npx @robb-lee/ccusage-mcp-server --setup
+# Run directly with npx (automatically starts setup if no config exists)
+npx @robb-lee/ccusage-mcp-server
 ```
 
 #### Option C: Install from source
@@ -179,15 +179,58 @@ The MCP server checks for configuration in this order:
 
 ### Setup Commands
 
+**Note**: When using `npx`, the server automatically enters setup mode if no configuration is found. The `--setup` flag is only needed when installed globally or to reconfigure existing settings.
+
 ```bash
-# Initial setup
+# Initial setup with npx (auto-detects no config)
+npx @robb-lee/ccusage-mcp-server
+
+# Initial setup with global install
 ccusage-mcp-server --setup
 
-# Reconfigure
+# Reconfigure existing settings
 ccusage-mcp-server --setup
 ```
 
 Configuration is saved to `~/.ccusage-mcp/config.json` for future use.
+
+## 🔄 Updating
+
+To update to the latest version and manage your installation:
+
+```bash
+# Get the latest version (includes bug fixes and new features)
+npx @robb-lee/ccusage-mcp-server@latest
+```
+
+If you already have a configuration, you'll see an interactive menu:
+
+```
+🚀 CCUsage MCP Server
+Configuration found. What would you like to do?
+
+1) 🔄 Update command files to latest version  
+2) ⚙️  Reconfigure settings (change webhook/username)
+3) 🗑️  Reset configuration and setup again
+
+Choose (1-3):
+```
+
+### Update Options
+
+- **Option 1**: Updates `/robb:send-usage` command files to the latest version
+- **Option 2**: Change your webhook URL, username, or other settings
+- **Option 3**: Delete all configuration and start fresh setup
+
+### For Global Installation Users
+
+```bash
+# Update the globally installed package
+npm update -g @robb-lee/ccusage-mcp-server
+
+# Then run the update menu
+ccusage-mcp-server --setup
+```
 
 ### n8n Workflow Configuration
 
@@ -253,7 +296,8 @@ echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | node index.js
 
 2. **Setup MCP server**
    ```bash
-   npx @robb-lee/ccusage-mcp-server --setup
+   npx @robb-lee/ccusage-mcp-server
+   # Automatically starts setup if no config exists
    # Enter your team's webhook URL when prompted
    ```
 

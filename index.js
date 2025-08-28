@@ -33,6 +33,9 @@ const server = new Server(
 
 // Helper function to parse ccusage output
 function parseCCUsageOutput(output) {
+  console.error('Raw ccusage output:');
+  console.error(output);
+  
   const lines = output.split('\n');
   const data = {
     totalTokens: 0,
@@ -44,58 +47,101 @@ function parseCCUsageOutput(output) {
     models: {}
   };
 
-  let currentSection = null;
+  // Get today's date in the format used by ccusage (YYYY-MM-DD)
+  const today = new Date().toISOString().split('T')[0];
+  console.error('Looking for date:', today);
 
+  // Look for table rows - find lines that contain today's date
   for (const line of lines) {
     const trimmed = line.trim();
     
-    // Skip empty lines and headers
-    if (!trimmed || trimmed.startsWith('━') || trimmed.includes('Token Usage')) {
+    // Skip table borders and headers
+    if (!trimmed || trimmed.startsWith('┌') || trimmed.startsWith('├') || 
+        trimmed.startsWith('└') || trimmed.startsWith('│ Date') ||
+        trimmed.includes('━')) {
       continue;
     }
 
-    // Detect sections
-    if (trimmed.includes('Total:')) {
-      currentSection = 'total';
-    } else if (trimmed.includes('Model Breakdown:')) {
-      currentSection = 'models';
-    }
+    // Look for today's data - check if line contains today's date
+    if (trimmed.includes(today) || trimmed.includes(today.replace(/-/g, '-').substring(5))) {
+      console.error('Found today row:', trimmed);
+      
+      // Split by │ and clean up the data
+      const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
+      
+      if (columns.length >= 8) {
+        // Parse numeric values, removing commas
+        const parseNumber = (str) => {
+          const cleaned = str.replace(/[,$]/g, '');
+          return parseInt(cleaned, 10) || 0;
+        };
+        
+        const parseFloat = (str) => {
+          const cleaned = str.replace(/[$,]/g, '');
+          return parseFloat(cleaned) || 0;
+        };
 
-    // Parse total section
-    if (currentSection === 'total') {
-      if (trimmed.includes('Input:')) {
-        const match = trimmed.match(/Input:\s*([\d,]+)/);
-        if (match) data.inputTokens = parseInt(match[1].replace(/,/g, ''), 10);
-      } else if (trimmed.includes('Output:')) {
-        const match = trimmed.match(/Output:\s*([\d,]+)/);
-        if (match) data.outputTokens = parseInt(match[1].replace(/,/g, ''), 10);
-      } else if (trimmed.includes('Cache creation input:')) {
-        const match = trimmed.match(/Cache creation input:\s*([\d,]+)/);
-        if (match) data.cacheCreationInputTokens = parseInt(match[1].replace(/,/g, ''), 10);
-      } else if (trimmed.includes('Cache read input:')) {
-        const match = trimmed.match(/Cache read input:\s*([\d,]+)/);
-        if (match) data.cacheReadInputTokens = parseInt(match[1].replace(/,/g, ''), 10);
-      } else if (trimmed.includes('Cost:')) {
-        const match = trimmed.match(/\$([\d.]+)/);
-        if (match) data.totalCost = parseFloat(match[1]);
-      }
-    }
-
-    // Parse model breakdown
-    if (currentSection === 'models' && trimmed.includes(':')) {
-      const [model, tokens] = trimmed.split(':').map(s => s.trim());
-      if (model && tokens) {
-        const tokenMatch = tokens.match(/([\d,]+)/);
-        if (tokenMatch) {
-          data.models[model] = parseInt(tokenMatch[1].replace(/,/g, ''), 10);
+        // Extract values from table columns
+        data.inputTokens = parseNumber(columns[2]); // Input column
+        data.outputTokens = parseNumber(columns[3]); // Output column
+        data.cacheCreationInputTokens = parseNumber(columns[4]); // Cache Create column
+        data.cacheReadInputTokens = parseNumber(columns[5]); // Cache Read column
+        data.totalTokens = parseNumber(columns[6]); // Total Tokens column
+        data.totalCost = parseFloat(columns[7]); // Cost column
+        
+        // Extract model info from second column if available
+        if (columns[1]) {
+          const modelText = columns[1];
+          if (modelText.includes('-')) {
+            const models = modelText.split('\n').filter(m => m.trim().startsWith('- '));
+            models.forEach(model => {
+              const cleanModel = model.replace('- ', '').trim();
+              if (cleanModel) {
+                data.models[cleanModel] = data.totalTokens; // Approximate, since we don't have per-model breakdown
+              }
+            });
+          }
         }
+        
+        console.error('Parsed data:', data);
+        break; // Found today's data, stop looking
       }
     }
   }
 
-  // Calculate total if not already set
-  data.totalTokens = data.inputTokens + data.outputTokens + 
-                     data.cacheCreationInputTokens + data.cacheReadInputTokens;
+  // If no data found, try to find "Total" row as fallback
+  if (data.totalTokens === 0) {
+    console.error('No today data found, looking for Total row');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.includes('Total') && trimmed.includes('│')) {
+        console.error('Found total row:', trimmed);
+        
+        const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
+        if (columns.length >= 8) {
+          const parseNumber = (str) => {
+            const cleaned = str.replace(/[,$]/g, '');
+            return parseInt(cleaned, 10) || 0;
+          };
+          
+          const parseFloat = (str) => {
+            const cleaned = str.replace(/[$,]/g, '');
+            return parseFloat(cleaned) || 0;
+          };
+
+          data.inputTokens = parseNumber(columns[2]);
+          data.outputTokens = parseNumber(columns[3]);
+          data.cacheCreationInputTokens = parseNumber(columns[4]);
+          data.cacheReadInputTokens = parseNumber(columns[5]);
+          data.totalTokens = parseNumber(columns[6]);
+          data.totalCost = parseFloat(columns[7]);
+          
+          console.error('Parsed total data:', data);
+          break;
+        }
+      }
+    }
+  }
 
   return data;
 }
@@ -225,7 +271,7 @@ async function main() {
   // Load configuration
   globalConfig = await getConfig();
   
-  // If setup mode, exit after configuration
+  // If setup mode, exit after configuration  
   const args = process.argv.slice(2);
   if (args.includes('--setup') || args.includes('setup')) {
     // Command installation happens in config.js during setup
@@ -233,6 +279,9 @@ async function main() {
     console.error('📝 Use /robb:send-usage in Claude to send your token usage to the spreadsheet!');
     process.exit(0);
   }
+  
+  // If no config and running in TTY, getConfig() will trigger interactive setup/menu
+  // which may exit the process, so this code may not be reached
   
   const transport = new StdioServerTransport();
   await server.connect(transport);
