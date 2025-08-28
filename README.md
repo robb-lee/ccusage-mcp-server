@@ -8,13 +8,16 @@ Track and share Claude token usage automatically via n8n and Google Sheets.
 # Install and setup
 npx ccusage-mcp-server --setup
 
-# Add to Claude Desktop config
-# Then restart Claude Desktop
+# Add to Claude Code
+claude mcp add ccusage-tracker npx ccusage-mcp-server
+
+# Verify installation
+claude mcp list
 ```
 
 ## 🎯 Overview
 
-This MCP (Model Context Protocol) server allows Claude Desktop users to:
+This MCP (Model Context Protocol) server allows Claude Code users to:
 - Track their daily token usage with a simple command
 - Automatically send usage data to a team spreadsheet
 - Monitor costs and usage patterns across multiple users
@@ -23,7 +26,7 @@ This MCP (Model Context Protocol) server allows Claude Desktop users to:
 
 ```
 [Local Machine]                    [Central Server]
-Claude Desktop                     n8n Instance
+Claude Code                        n8n Instance
      ↓                                  ↑
 MCP Server      ---HTTP POST--->   Webhook
      ↓                                  ↓
@@ -87,60 +90,61 @@ npm run setup
 
 3. Activate the workflow and copy the webhook URL
 
-### Step 3: Configure Claude Desktop
+### Step 3: Configure Claude Code
 
-Add to your Claude Desktop configuration:
+Claude Code uses MCP CLI commands to add servers:
 
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`  
-**Linux**: `~/.config/Claude/claude_desktop_config.json`
+#### Option A: If installed globally (Recommended)
+```bash
+# Add the MCP server to Claude Code
+claude mcp add ccusage-tracker ccusage-mcp-server
 
-#### If installed globally:
-```json
-{
-  "mcpServers": {
-    "ccusage-tracker": {
-      "command": "ccusage-mcp-server"
-    }
-  }
-}
+# Or with custom environment variables
+claude mcp add ccusage-tracker ccusage-mcp-server \
+  -e N8N_WEBHOOK_URL=https://your-n8n.com/webhook/ccusage-tracker \
+  -e CCUSAGE_USER_ID=your_name
 ```
 
-#### If using npx:
-```json
-{
-  "mcpServers": {
-    "ccusage-tracker": {
-      "command": "npx",
-      "args": ["ccusage-mcp-server"]
-    }
-  }
-}
+#### Option B: If using npx
+```bash
+# Add using npx
+claude mcp add ccusage-tracker npx ccusage-mcp-server
 ```
 
-#### Override configuration (optional):
-```json
-{
-  "mcpServers": {
-    "ccusage-tracker": {
-      "command": "npx",
-      "args": ["ccusage-mcp-server"],
-      "env": {
-        "N8N_WEBHOOK_URL": "https://your-n8n.com/webhook/ccusage-tracker",
-        "CCUSAGE_USER_ID": "your_name"
-      }
-    }
-  }
-}
+#### Option C: Add for entire project (team sharing)
+```bash
+# Add to project (creates .mcp.json)
+claude mcp add --scope project ccusage-tracker ccusage-mcp-server
 ```
 
-### Step 4: Restart Claude Desktop
+#### Managing MCP Servers
+```bash
+# List all configured MCP servers
+claude mcp list
 
-After configuration, restart Claude Desktop to load the MCP server.
+# Get details of specific server
+claude mcp get ccusage-tracker
+
+# Remove server if needed
+claude mcp remove ccusage-tracker
+```
+
+### Step 4: Verify Installation
+
+1. Run `claude mcp list` to confirm the server is added
+2. Restart Claude Code if already running
+3. In Claude Code, use `/mcp` command to see available servers
 
 ## 🚀 Usage
 
-In Claude Desktop, simply use the MCP tool:
+In Claude Code, you can verify MCP servers and use them:
+
+```bash
+# Check available MCP servers
+/mcp
+```
+
+Then use the MCP tool:
 
 ```
 Use the send-usage tool to send my token usage to the spreadsheet
@@ -163,7 +167,7 @@ The tool will:
 ### Configuration Priority
 
 The MCP server checks for configuration in this order:
-1. **Environment variables** (from Claude Desktop config)
+1. **Environment variables** (set via `claude mcp add -e KEY=value`)
 2. **Config file** (`~/.ccusage-mcp/config.json`)
 3. **Interactive setup** (if no config found)
 
@@ -244,10 +248,23 @@ echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | node index.js
 ### For Team Members:
 
 1. **Install ccusage and configure with your API key**
-2. **Clone/download this MCP server**
-3. **Configure with team's webhook URL**
-4. **Add to Claude Desktop config**
-5. **Start tracking!**
+   ```bash
+   npm install -g ccusage
+   ccusage --setup
+   ```
+
+2. **Setup MCP server**
+   ```bash
+   npx ccusage-mcp-server --setup
+   # Enter your team's webhook URL when prompted
+   ```
+
+3. **Add to Claude Code**
+   ```bash
+   claude mcp add ccusage-tracker npx ccusage-mcp-server
+   ```
+
+4. **Start tracking!**
 
 ## 🐛 Troubleshooting
 
@@ -273,7 +290,7 @@ echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | node index.js
 ### Debug Mode
 
 To see detailed logs:
-1. Check Claude Desktop logs
+1. Check Claude Code logs
 2. View n8n execution history
 3. Run MCP server manually to see console output
 
