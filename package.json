@@ -1,6 +1,6 @@
 {
   "name": "@robb-lee/ccusage-mcp-server",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "MCP server for tracking Claude token usage and sending to n8n webhook",
   "main": "index.js",
   "type": "module",
