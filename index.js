@@ -62,7 +62,7 @@ function parseCCUsageOutput(output) {
 
     // Look for today's data - check if line contains today's date
     if (trimmed.includes(today) || trimmed.includes(today.replace(/-/g, '-').substring(5))) {
-      console.error('Found today row:', trimmed);
+      // Debug: Found today row
       
       // Split by │ and clean up the data
       const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
@@ -101,7 +101,7 @@ function parseCCUsageOutput(output) {
           }
         }
         
-        console.error('Parsed data:', data);
+        // Debug: Parsed data
         break; // Found today's data, stop looking
       }
     }
@@ -109,11 +109,11 @@ function parseCCUsageOutput(output) {
 
   // If no data found, try to find "Total" row as fallback
   if (data.totalTokens === 0) {
-    console.error('No today data found, looking for Total row');
+    // No today data found, looking for Total row
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.includes('Total') && trimmed.includes('│')) {
-        console.error('Found total row:', trimmed);
+        // Debug: Found total row
         
         const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
         if (columns.length >= 8) {
@@ -134,7 +134,7 @@ function parseCCUsageOutput(output) {
           data.totalTokens = parseNumber(columns[6]);
           data.totalCost = parseFloat(columns[7]);
           
-          console.error('Parsed total data:', data);
+          // Debug: Parsed total data
           break;
         }
       }
@@ -179,13 +179,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Execute ccusage command
-      console.error('Executing ccusage command...');
+      // Executing ccusage command...
       let ccusageOutput;
       
       try {
         const { stdout, stderr } = await execAsync('ccusage --today');
         if (stderr) {
-          console.error('ccusage stderr:', stderr);
+          // Debug: ccusage stderr available
         }
         ccusageOutput = stdout;
       } catch (error) {
@@ -249,7 +249,7 @@ Response from n8n: ${responseData || 'Success'}`,
         ],
       };
     } catch (error) {
-      console.error('Error in send-usage:', error);
+      // Error in send-usage - will be thrown to handler
       throw error;
     }
   }
@@ -269,8 +269,7 @@ async function main() {
   const args = process.argv.slice(2);
   if (args.includes('--setup') || args.includes('setup')) {
     // Command installation happens in config.js during setup
-    console.error('\n✅ Setup complete! You can now use the MCP server.');
-    console.error('📝 Use /robb:send-usage in Claude to send your token usage to the spreadsheet!');
+    // Setup mode messages are shown in config.js
     process.exit(0);
   }
   
@@ -282,6 +281,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  // Silent exit in MCP mode - don't output to stderr
   process.exit(1);
 });
