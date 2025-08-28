@@ -277,7 +277,9 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   
-  // Silent operation - no console logs in server mode
+  // Output startup message to stderr for Claude Code to detect
+  // This is the standard pattern used by other MCP servers
+  console.error('CCUsage MCP Server running on stdio');
 }
 
 main().catch((error) => {
