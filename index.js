@@ -187,10 +187,15 @@ function parseCCUsageOutput(output) {
           }
         }
         // Check for compact mode: year in this line, month-day in next line  
-        else if (dateColumn.includes(year) && nextLine.includes(monthDay)) {
-          // Verify this is actually today's data by checking the month-day in next line
+        else if (dateColumn === year || dateColumn.includes(year)) {
+          // Check if next line contains the month-day part
           const nextColumns = nextLine.split('│').map(col => col.trim()).filter(col => col);
-          if (nextColumns.length > 0 && nextColumns[0].includes(monthDay)) {
+          
+          console.error(`[DEBUG] Checking compact mode:`);
+          console.error(`[DEBUG]   Date column: "${dateColumn}" vs year: "${year}"`);
+          console.error(`[DEBUG]   Next line first column: "${nextColumns[0]}" vs monthDay: "${monthDay}"`);
+          
+          if (nextColumns.length > 0 && (nextColumns[0] === monthDay || nextColumns[0].includes(monthDay))) {
             console.error(`[DEBUG] Found today's data (compact mode):`);
             console.error(`[DEBUG]   Year line: ${trimmed.substring(0, 80)}...`);
             console.error(`[DEBUG]   Month-day line: ${nextLine.substring(0, 80)}...`);
@@ -287,38 +292,13 @@ function parseCCUsageOutput(output) {
     }
   }
 
-  // If no data found, try to find "Total" row as fallback
+  // If no data found, return error instead of using Total row
   if (data.totalTokens === 0) {
-    console.error(`[DEBUG] No today data found, looking for Total row`);
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.includes('Total') && trimmed.includes('│')) {
-        // Debug: Found total row
-        
-        const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
-        if (columns.length >= 8) {
-          const parseNumberValue = (str) => {
-            const cleaned = str.replace(/[,$]/g, '');
-            return parseInt(cleaned, 10) || 0;
-          };
-          
-          const parseFloatValue = (str) => {
-            const cleaned = str.replace(/[$,]/g, '');
-            return parseFloat(cleaned) || 0;
-          };
-
-          data.inputTokens = parseNumberValue(columns[2]);
-          data.outputTokens = parseNumberValue(columns[3]);
-          data.cacheCreationInputTokens = parseNumberValue(columns[4]);
-          data.cacheReadInputTokens = parseNumberValue(columns[5]);
-          data.totalTokens = parseNumberValue(columns[6]);
-          data.totalCost = parseFloatValue(columns[7]);
-          
-          // Debug: Parsed total data
-          break;
-        }
-      }
-    }
+    console.error(`[DEBUG] No data found for today (${today})`);
+    console.error(`[DEBUG] Available dates in ccusage output need to be checked`);
+    
+    // Return data with error flag instead of using Total
+    data.error = `No usage data found for ${today}. Please check if you have used Claude Code today.`;
   }
 
   return data;
@@ -382,6 +362,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       console.error(`[DEBUG]   Total tokens: ${usageData.totalTokens}`);
       console.error(`[DEBUG]   Input/Output: ${usageData.inputTokens}/${usageData.outputTokens}`);
       console.error(`[DEBUG]   Cost: $${usageData.totalCost}`);
+      
+      // Check if parsing found an error
+      if (usageData.error) {
+        throw new McpError(
+          ErrorCode.InternalError,
+          usageData.error
+        );
+      }
 
       // Prepare payload
       const payload = {
