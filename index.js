@@ -123,18 +123,64 @@ function parseCCUsageOutput(output) {
             console.error(`[DEBUG]   Cache Create: ${data.cacheCreationInputTokens}, Cache Read: ${data.cacheReadInputTokens}`);
             console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`);
             
-            // Extract model info from second column if available
+            // Extract model info from second column - check multiple lines for same date
             if (columns[1]) {
-              const modelText = columns[1];
-              if (modelText.includes('-')) {
-                const models = modelText.split('\n').filter(m => m.trim().startsWith('- '));
-                models.forEach(model => {
-                  const cleanModel = model.replace('- ', '').trim();
-                  if (cleanModel) {
-                    data.models[cleanModel] = data.totalTokens; // Approximate, since we don't have per-model breakdown
-                  }
-                });
+              // Collect all models from current and subsequent lines with same date
+              let allModelLines = [];
+              let checkLineIndex = i;
+              
+              // Add current line's model
+              if (columns[1].trim()) {
+                allModelLines.push(columns[1]);
               }
+              
+              // Check next lines for same date (models can span multiple rows)
+              while (checkLineIndex < lines.length - 1) {
+                checkLineIndex++;
+                const nextCheckLine = lines[checkLineIndex];
+                
+                // Stop if we hit a separator or new date row
+                if (!nextCheckLine || nextCheckLine.includes('├') || 
+                    nextCheckLine.includes('└') || nextCheckLine.includes('Total')) {
+                  break;
+                }
+                
+                // Parse columns from next line
+                if (nextCheckLine.includes('│')) {
+                  const nextCols = nextCheckLine.split('│').map(col => col.trim()).filter(col => col);
+                  
+                  // If first column (date) is empty and second column has model info
+                  if (nextCols.length >= 2 && !nextCols[0] && nextCols[1].includes('-')) {
+                    allModelLines.push(nextCols[1]);
+                  } else if (nextCols.length >= 1 && nextCols[0] && !nextCols[0].includes('20')) {
+                    // In compact mode, model might be in first column of continuation line
+                    if (nextCols[0].includes('-')) {
+                      allModelLines.push(nextCols[0]);
+                    }
+                  } else {
+                    // New date row or no model info, stop
+                    break;
+                  }
+                }
+              }
+              
+              // Parse all collected model lines
+              allModelLines.forEach(modelLine => {
+                if (modelLine.includes('-')) {
+                  // Extract models using regex to handle both "- model" format
+                  const modelMatches = modelLine.match(/- ([^\s]+)/g);
+                  if (modelMatches) {
+                    modelMatches.forEach(match => {
+                      const cleanModel = match.replace('- ', '').trim();
+                      if (cleanModel) {
+                        data.models[cleanModel] = data.totalTokens; // Approximate, since we don't have per-model breakdown
+                      }
+                    });
+                  }
+                }
+              });
+              
+              console.error(`[DEBUG] Extracted models: ${JSON.stringify(Object.keys(data.models))}`);
             }
             
             break; // Found today's data, stop looking
@@ -173,18 +219,64 @@ function parseCCUsageOutput(output) {
               console.error(`[DEBUG]   Input: ${data.inputTokens}, Output: ${data.outputTokens}`);
               console.error(`[DEBUG]   Total: ${data.totalTokens}, Cost: $${data.totalCost}`);
               
-              // Extract model info if available
+              // Extract model info - check multiple lines for same date
               if (columns[1]) {
-                const modelText = columns[1];
-                if (modelText.includes('-')) {
-                  const models = modelText.split('\n').filter(m => m.trim().startsWith('- '));
-                  models.forEach(model => {
-                    const cleanModel = model.replace('- ', '').trim();
-                    if (cleanModel) {
-                      data.models[cleanModel] = data.totalTokens;
-                    }
-                  });
+                // Collect all models from current and subsequent lines with same date
+                let allModelLines = [];
+                let checkLineIndex = i;
+                
+                // Add current line's model
+                if (columns[1].trim()) {
+                  allModelLines.push(columns[1]);
                 }
+                
+                // Check next lines for same date (models can span multiple rows)
+                while (checkLineIndex < lines.length - 1) {
+                  checkLineIndex++;
+                  const nextCheckLine = lines[checkLineIndex];
+                  
+                  // Stop if we hit a separator or new date row
+                  if (!nextCheckLine || nextCheckLine.includes('├') || 
+                      nextCheckLine.includes('└') || nextCheckLine.includes('Total')) {
+                    break;
+                  }
+                  
+                  // Parse columns from next line
+                  if (nextCheckLine.includes('│')) {
+                    const nextCols = nextCheckLine.split('│').map(col => col.trim()).filter(col => col);
+                    
+                    // If first column (date) is empty and second column has model info
+                    if (nextCols.length >= 2 && !nextCols[0] && nextCols[1].includes('-')) {
+                      allModelLines.push(nextCols[1]);
+                    } else if (nextCols.length >= 1 && nextCols[0] && !nextCols[0].includes('20')) {
+                      // In compact mode, model might be in first column of continuation line
+                      if (nextCols[0].includes('-')) {
+                        allModelLines.push(nextCols[0]);
+                      }
+                    } else {
+                      // New date row or no model info, stop
+                      break;
+                    }
+                  }
+                }
+                
+                // Parse all collected model lines
+                allModelLines.forEach(modelLine => {
+                  if (modelLine.includes('-')) {
+                    // Extract models using regex to handle both "- model" format
+                    const modelMatches = modelLine.match(/- ([^\s]+)/g);
+                    if (modelMatches) {
+                      modelMatches.forEach(match => {
+                        const cleanModel = match.replace('- ', '').trim();
+                        if (cleanModel) {
+                          data.models[cleanModel] = data.totalTokens;
+                        }
+                      });
+                    }
+                  }
+                });
+                
+                console.error(`[DEBUG] Extracted models: ${JSON.stringify(Object.keys(data.models))}`);
               }
               
               break; // Found today's data, stop looking
