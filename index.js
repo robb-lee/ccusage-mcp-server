@@ -49,7 +49,8 @@ function parseCCUsageOutput(output) {
     cacheCreationInputTokens: 0,
     cacheReadInputTokens: 0,
     totalCost: 0,
-    models: {}
+    models: {},
+    date: null  // Store the actual date from ccusage data
   };
 
   // Get today's date in local timezone (not UTC) to match system time
@@ -87,6 +88,9 @@ function parseCCUsageOutput(output) {
         if (dateColumn === today || dateColumn.includes(today)) {
           // Found today's data in wide mode
           console.error(`[DEBUG] Found today's data (wide mode): ${trimmed.substring(0, 80)}...`);
+          
+          // Store the actual date from the data
+          data.date = today;
           
           // In wide/regular mode, check we have enough columns
           if (columns.length >= 5) {
@@ -204,6 +208,9 @@ function parseCCUsageOutput(output) {
             console.error(`[DEBUG] Found today's data (compact mode):`);
             console.error(`[DEBUG]   Year line: ${trimmed.substring(0, 80)}...`);
             console.error(`[DEBUG]   Month-day line: ${nextLine.substring(0, 80)}...`);
+            
+            // Store the actual date from the data
+            data.date = today;
             
             // Parse data from current line (which has the actual numbers)
             if (columns.length >= 5) {
@@ -382,7 +389,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const payload = {
         user: globalConfig.CCUSAGE_USER_ID || process.env.USER || os.hostname(),
         timestamp: new Date().toISOString(),
-        date: new Date().toLocaleDateString(),
+        date: usageData.date || new Date().toLocaleDateString(), // Use the actual date from parsed data
         time: new Date().toLocaleTimeString(),
         note: args?.note || '',
         ...usageData,
@@ -415,6 +422,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             text: `✅ Token usage data sent successfully!
             
 📊 **Summary:**
+- Date: ${payload.date}
 - Total Tokens: ${usageData.totalTokens.toLocaleString()}
 - Input: ${usageData.inputTokens.toLocaleString()}
 - Output: ${usageData.outputTokens.toLocaleString()}
