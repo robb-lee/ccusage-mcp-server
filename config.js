@@ -204,7 +204,7 @@ export async function getConfig() {
   const args = process.argv.slice(2);
   const isSetupMode = args.includes('--setup') || args.includes('setup');
   const isNpxExecution = process.argv[1] && process.argv[1].includes('/_npx/');
-  const isDirectExecution = process.stdin.isTTY || isNpxExecution;
+  const isDirectExecution = process.stdin.isTTY;
   
   if (isSetupMode || (isDirectExecution && !process.env.MCP_MODE)) {
     const config = await interactiveSetup();

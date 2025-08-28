@@ -1,11 +1,11 @@
 {
   "name": "@robb-lee/ccusage-mcp-server",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "MCP server for tracking Claude token usage and sending to n8n webhook",
   "main": "index.js",
   "type": "module",
   "bin": {
-    "ccusage-mcp-server": "./index.js"
+    "ccusage-mcp-server": "index.js"
   },
   "scripts": {
     "start": "node index.js",
