@@ -15,3 +15,8 @@ build/
 *.swo
 *~
 .ccusage-mcp/
+
+# Claude-specific files
+.claude/
+CLAUDE.md
+claudedocs/
