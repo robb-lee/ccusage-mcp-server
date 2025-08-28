@@ -99,10 +99,11 @@ async function showUpdateMenu() {
   console.error('Configuration found. What would you like to do?\n');
   
   console.error('1) 🔄 Update command files to latest version');
-  console.error('2) ⚙️  Reconfigure settings (change webhook/username)');
-  console.error('3) 🗑️  Reset configuration and setup again\n');
+  console.error('2) 🔌 Install/Update MCP server in Claude Code');
+  console.error('3) ⚙️  Reconfigure settings (change webhook/username)');
+  console.error('4) 🗑️  Reset configuration and setup again\n');
   
-  const choice = await question('Choose (1-3): ');
+  const choice = await question('Choose (1-4): ');
   
   switch (choice.trim()) {
     case '1':
@@ -112,10 +113,15 @@ async function showUpdateMenu() {
       break;
       
     case '2':
+      console.error('\n🔌 Installing/Updating MCP server in Claude Code...');
+      await installMCPServer();
+      break;
+      
+    case '3':
       console.error('\n⚙️  Starting reconfiguration...');
       return await runFreshSetup(); // Will return new config
       
-    case '3':
+    case '4':
       console.error('\n🗑️  Resetting configuration...');
       // Delete config file
       try {
@@ -181,6 +187,10 @@ async function runFreshSetup() {
   console.error('\nStep 3: Installing Claude Command');
   await installClaudeCommand();
 
+  // Install MCP server
+  console.error('\nStep 4: Installing MCP Server in Claude Code');
+  await installMCPServer();
+
   rl.close();
   return config;
 }
@@ -239,6 +249,29 @@ export async function getConfig() {
 // Check if configuration exists
 export function hasConfig() {
   return !!(process.env.N8N_WEBHOOK_URL || (fs.existsSync(CONFIG_FILE) && loadConfig().N8N_WEBHOOK_URL));
+}
+
+// Install MCP server in Claude Code
+export async function installMCPServer() {
+  try {
+    console.error('🔌 Installing MCP server in Claude Code...');
+    const command = 'claude mcp add ccusage-tracker -s user -- npx -y @robb-lee/ccusage-mcp-server@latest';
+    
+    const { stdout, stderr } = await execAsync(command);
+    
+    if (stderr && !stderr.includes('successfully')) {
+      console.error('⚠️  MCP server installation output:', stderr);
+    }
+    
+    console.error('✅ MCP server installed in Claude Code!');
+    console.error('   You can now use /robb:send-usage command in Claude');
+    return true;
+  } catch (error) {
+    console.error('⚠️  Could not install MCP server automatically:', error.message);
+    console.error('\n   To install manually, run:');
+    console.error('   claude mcp add ccusage-tracker -s user -- npx -y @robb-lee/ccusage-mcp-server@latest');
+    return false;
+  }
 }
 
 // Install Claude command file
