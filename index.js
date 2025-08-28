@@ -69,23 +69,23 @@ function parseCCUsageOutput(output) {
       
       if (columns.length >= 8) {
         // Parse numeric values, removing commas
-        const parseNumber = (str) => {
+        const parseNumberValue = (str) => {
           const cleaned = str.replace(/[,$]/g, '');
           return parseInt(cleaned, 10) || 0;
         };
         
-        const parseFloat = (str) => {
+        const parseFloatValue = (str) => {
           const cleaned = str.replace(/[$,]/g, '');
           return parseFloat(cleaned) || 0;
         };
 
         // Extract values from table columns
-        data.inputTokens = parseNumber(columns[2]); // Input column
-        data.outputTokens = parseNumber(columns[3]); // Output column
-        data.cacheCreationInputTokens = parseNumber(columns[4]); // Cache Create column
-        data.cacheReadInputTokens = parseNumber(columns[5]); // Cache Read column
-        data.totalTokens = parseNumber(columns[6]); // Total Tokens column
-        data.totalCost = parseFloat(columns[7]); // Cost column
+        data.inputTokens = parseNumberValue(columns[2]); // Input column
+        data.outputTokens = parseNumberValue(columns[3]); // Output column
+        data.cacheCreationInputTokens = parseNumberValue(columns[4]); // Cache Create column
+        data.cacheReadInputTokens = parseNumberValue(columns[5]); // Cache Read column
+        data.totalTokens = parseNumberValue(columns[6]); // Total Tokens column
+        data.totalCost = parseFloatValue(columns[7]); // Cost column
         
         // Extract model info from second column if available
         if (columns[1]) {
@@ -117,22 +117,22 @@ function parseCCUsageOutput(output) {
         
         const columns = trimmed.split('│').map(col => col.trim()).filter(col => col);
         if (columns.length >= 8) {
-          const parseNumber = (str) => {
+          const parseNumberValue = (str) => {
             const cleaned = str.replace(/[,$]/g, '');
             return parseInt(cleaned, 10) || 0;
           };
           
-          const parseFloat = (str) => {
+          const parseFloatValue = (str) => {
             const cleaned = str.replace(/[$,]/g, '');
             return parseFloat(cleaned) || 0;
           };
 
-          data.inputTokens = parseNumber(columns[2]);
-          data.outputTokens = parseNumber(columns[3]);
-          data.cacheCreationInputTokens = parseNumber(columns[4]);
-          data.cacheReadInputTokens = parseNumber(columns[5]);
-          data.totalTokens = parseNumber(columns[6]);
-          data.totalCost = parseFloat(columns[7]);
+          data.inputTokens = parseNumberValue(columns[2]);
+          data.outputTokens = parseNumberValue(columns[3]);
+          data.cacheCreationInputTokens = parseNumberValue(columns[4]);
+          data.cacheReadInputTokens = parseNumberValue(columns[5]);
+          data.totalTokens = parseNumberValue(columns[6]);
+          data.totalCost = parseFloatValue(columns[7]);
           
           // Debug: Parsed total data
           break;
