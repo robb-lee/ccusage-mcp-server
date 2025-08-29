@@ -38,6 +38,11 @@ When the user types `/robb:send-usage`, you should:
 ### Note Feedback Guide
 When the user includes a note parameter, provide feedback based on the following patterns:
 
+**Important: Respond in the same language as the user's note**
+- If the note contains Korean (한글), respond in Korean
+- If the note contains English, respond in English
+- Match the user's language for natural communication
+
 #### 1. Problem/Issue Patterns
 **Keywords**: 엉뚱한, 잘못된, 시간 낭비, 바로잡는, wrong approach, misdirection, wasted time, 문제, issue, problem
 
