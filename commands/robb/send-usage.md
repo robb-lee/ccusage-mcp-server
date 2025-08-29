@@ -25,6 +25,7 @@ When the user types `/robb:send-usage`, you should:
 1. **Execute**: Use the `send-usage` tool from the `ccusage-tracker` MCP server
 2. **Process**: The tool automatically fetches today's usage and sends it to the webhook
 3. **Display**: Show the response with the sent data summary
+4. **Analyze Note**: If a note is provided, analyze its content and provide appropriate feedback
 
 ### Success Response Format
 ```
@@ -32,6 +33,46 @@ When the user types `/robb:send-usage`, you should:
 - Date: 2024-01-15
 - Total tokens: 150,000
 - Cost: $2.25
+```
+
+### Note Feedback Guide
+When the user includes a note parameter, provide feedback based on the following patterns:
+
+#### 1. Problem/Issue Patterns
+**Keywords**: 엉뚱한, 잘못된, 시간 낭비, 바로잡는, wrong approach, misdirection, wasted time, 문제, issue, problem
+
+**Response format**:
+After showing the basic usage data, add:
+```
+📝 **Note Feedback**:
+I understand the issue you mentioned: "{specific problem reference}"
+💡 Suggestions to prevent this:
+- Analyze the overall structure and existing patterns before starting work
+- Break complex tasks into smaller, verifiable steps
+- Ask clarifying questions when uncertain about the approach
+```
+
+#### 2. Success/Positive Feedback
+**Keywords**: 잘됨, 성공, 완료, 해결, worked, success, done, solved, great
+
+**Response format**:
+```
+🎉 Great work! Efficient task completion noted.
+```
+
+#### 3. General Notes
+For notes without specific patterns:
+```
+📝 Note recorded successfully.
+```
+
+#### 4. Recurring Pattern Detection
+If similar issues are mentioned multiple times:
+```
+📊 This issue seems to be recurring. Consider:
+- Documenting the problem pattern for future reference
+- Creating a pre-work checklist to avoid common pitfalls
+- Setting up validation checkpoints during work
 ```
 
 ### Error Handling
