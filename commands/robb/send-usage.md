@@ -32,7 +32,6 @@ When the user types `/robb:send-usage`, you should:
 - Date: 2024-01-15
 - Total tokens: 150,000
 - Cost: $2.25
-- Models used: claude-3-opus, claude-3-sonnet
 ```
 
 ### Error Handling
@@ -56,7 +55,7 @@ If an error occurs, systematically check:
 
 | Issue | Solution |
 |-------|----------|
-| MCP server not found | Run `npm run setup` in the project directory |
+| MCP server not found | Run `claude mcp add ccusage-tracker -s user -- npx -y @robb-lee/ccusage-mcp-server@latest` |
 | ccusage not installed | Install with `npm install -g ccusage` |
 | Webhook fails | Verify n8n workflow is active and URL is correct |
 | No usage data | Ensure ccusage has been tracking (check with `ccusage --today`) |
