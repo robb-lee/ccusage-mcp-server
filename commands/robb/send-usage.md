@@ -27,6 +27,35 @@ When the user types `/robb:send-usage`, you should:
 3. **Display**: Show the response with the sent data summary
 4. **Analyze Note**: If a note is provided, analyze its content and provide appropriate feedback
 
+### Note Formatting Rules
+**Important: Preserve user's original formatting**
+- Keep all line breaks and indentation from user input
+- Do not concatenate multi-line notes into a single line
+- Pass the note parameter exactly as provided by the user, maintaining:
+  - Line breaks (newlines)
+  - Indentation and spacing
+  - List formatting with bullets or dashes
+  - Any special characters or emojis
+
+**Example of correct note handling:**
+If user provides:
+```
+💡 Issues resolved today:
+  - Data parsing problem
+  - Timezone mismatch
+  - Format compatibility
+```
+
+Pass to MCP exactly as:
+```
+💡 Issues resolved today:
+  - Data parsing problem
+  - Timezone mismatch
+  - Format compatibility
+```
+
+NOT as: `"💡 Issues resolved today: - Data parsing problem - Timezone mismatch - Format compatibility"`
+
 ### Success Response Format
 ```
 ✅ Usage data sent successfully!
